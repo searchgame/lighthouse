@@ -50,6 +50,7 @@
       "dobetterweb/notification-on-start",
       "dobetterweb/domstats",
       "dobetterweb/optimized-images",
+      "dobetterweb/response-compression",
       "dobetterweb/tags-blocking-first-paint",
       "dobetterweb/websql"
     ]
@@ -93,6 +94,7 @@
     "byte-efficiency/total-byte-weight",
     "byte-efficiency/unused-css-rules",
     "byte-efficiency/uses-optimized-images",
+    "byte-efficiency/uses-request-compression",
     "byte-efficiency/uses-responsive-images",
     "dobetterweb/appcache-manifest",
     "dobetterweb/dom-size",
@@ -394,6 +396,10 @@
           "weight": 1
         },
         "uses-optimized-images": {
+          "expectedValue": true,
+          "weight": 1
+        },
+        "uses-request-compression": {
           "expectedValue": true,
           "weight": 1
         },
