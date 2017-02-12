@@ -76,7 +76,7 @@ class CriticalRequestChains extends ComputedArtifact {
       // here, which has ancestors C, B and A (where A is the root), we will build array [C, B, A]
       // during this phase.
       const ancestors = [];
-      let ancestorRequest = request.initiator();
+      let ancestorRequest = request._initiator;
       let node = criticalRequestChains;
       while (ancestorRequest) {
         const ancestorIsCritical = this.isCritical(ancestorRequest);
@@ -93,7 +93,7 @@ class CriticalRequestChains extends ComputedArtifact {
           break;
         }
         ancestors.push(ancestorRequest.requestId);
-        ancestorRequest = ancestorRequest.initiator();
+        ancestorRequest = ancestorRequest._initiator;
       }
 
       // With the above array we can work from back to front, i.e. A, B, C, and during this process
