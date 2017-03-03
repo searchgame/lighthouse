@@ -69,8 +69,12 @@ class ResponseCompression extends Gatherer {
           return record;
         }
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           return zlib.gzip(content, (err, res) => {
+            if (err) {
+              return reject(err);
+            }
+
             // get gzip size
             record.gzipSize = Buffer.byteLength(res, 'utf8');
 

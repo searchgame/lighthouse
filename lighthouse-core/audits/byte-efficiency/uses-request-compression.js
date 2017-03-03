@@ -24,6 +24,7 @@ const Audit = require('./byte-efficiency-audit');
 const URL = require('../../lib/url-shim');
 
 const IGNORE_THRESHOLD_IN_BYTES = 1400;
+const IGNORE_THRESHOLD_IN_PERCENT = 0.9;
 const TOTAL_WASTED_BYTES_THRESHOLD = 100 * 1024; // 100KB
 
 class ResponsesAreCompressed extends Audit {
@@ -34,8 +35,9 @@ class ResponsesAreCompressed extends Audit {
     return {
       category: 'Performance',
       name: 'uses-request-compression',
-      description: 'Server responses are compressed using GZIP, BROTLI or DEFLATE.',
-      helpText: 'Requests should be optimized to save network bytes.' +
+      description: 'Compression enabled for server responses',
+      helpText: 'Text-based responses should be served with compression (gzip, deflate or brotli)' +
+        ' to minimize total network bytes.' +
         ' [Learn more](https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/optimize-encoding-and-transfer).',
       requiredArtifacts: ['ResponseCompression', 'networkRecords']
     };
@@ -56,7 +58,10 @@ class ResponsesAreCompressed extends Audit {
       const gzipSavings = originalSize - gzipSize;
 
       // allow a pass if we don't get 10% savings or less than 1400 bytes
-      if (gzipSize / originalSize > 0.9 || gzipSavings < IGNORE_THRESHOLD_IN_BYTES) {
+      if (
+          gzipSize / originalSize > IGNORE_THRESHOLD_IN_PERCENT ||
+          gzipSavings < IGNORE_THRESHOLD_IN_BYTES
+      ) {
         return results;
       }
 
@@ -70,11 +75,13 @@ class ResponsesAreCompressed extends Audit {
         totalBytes,
         wastedBytes: gzipSavingsBytes,
         wastedPercent: gzipSavingsPercent,
-        gzipSavings: this.toSavingsString(gzipSavingsBytes, gzipSavingsPercent),
+        potentialSavings: this.toSavingsString(gzipSavingsBytes, gzipSavingsPercent),
       });
 
       return results;
     }, []);
+
+
 
     let debugString;
     return {
@@ -82,9 +89,9 @@ class ResponsesAreCompressed extends Audit {
       debugString,
       results,
       tableHeadings: {
-        url: 'URL',
+        url: 'Uncompressed resource URL',
         totalKb: 'Original',
-        gzipSavings: 'GZIP Savings',
+        potentialSavings: 'GZIP Savings',
       }
     };
   }

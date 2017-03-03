@@ -248,9 +248,7 @@ module.exports = (function() {
           requestId,
         }).then(response => {
           onComplete(null, response.body, response.base64Encoded);
-        }).catch(err => {
-          onComplete(err);
-        });
+        }).catch(err => onComplete(err));
       }
     };
     const fakeConsoleModel = {
