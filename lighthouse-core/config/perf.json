@@ -19,7 +19,8 @@
       "styles",
       "css-usage",
       "dobetterweb/tags-blocking-first-paint",
-      "dobetterweb/optimized-images"
+      "dobetterweb/optimized-images",
+      "dobetterweb/response-compression"
     ]
   }
   ],
@@ -36,6 +37,7 @@
     "byte-efficiency/uses-optimized-images",
     "byte-efficiency/uses-responsive-images",
     "dobetterweb/dom-size",
+    "byte-efficiency/uses-request-compression",
     "dobetterweb/link-blocking-first-paint",
     "dobetterweb/script-blocking-first-paint"
   ],
@@ -73,6 +75,10 @@
     "items": [{
       "audits": {
         "unused-css-rules": {
+          "expectedValue": true,
+          "weight": 1
+        },
+        "uses-request-compression": {
           "expectedValue": true,
           "weight": 1
         },
