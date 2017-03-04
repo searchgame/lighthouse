@@ -65,8 +65,15 @@ class ResponsesAreCompressed extends Audit {
         return results;
       }
 
-      totalWastedBytes += gzipSavings;
+      // remove duplicates
       const url = URL.getDisplayName(record.url);
+      const isDuplicate = results.find(res => res.url === url &&
+        res.totalBytes === record.resourceSize);
+      if (isDuplicate) {
+        return results;
+      }
+
+      totalWastedBytes += gzipSavings;
       const totalBytes = originalSize;
       const gzipSavingsBytes = gzipSavings;
       const gzipSavingsPercent = 100 * gzipSavingsBytes / totalBytes;
@@ -80,8 +87,6 @@ class ResponsesAreCompressed extends Audit {
 
       return results;
     }, []);
-
-
 
     let debugString;
     return {
