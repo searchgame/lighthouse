@@ -25,7 +25,7 @@ const URL = require('../../lib/url-shim');
 
 const IGNORE_THRESHOLD_IN_BYTES = 1400;
 const IGNORE_THRESHOLD_IN_PERCENT = 0.9;
-const TOTAL_WASTED_BYTES_THRESHOLD = 100 * 1024; // 100KB
+const TOTAL_WASTED_BYTES_THRESHOLD = 10 * 1024; // 5KB
 
 class ResponsesAreCompressed extends Audit {
   /**

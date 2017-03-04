@@ -48,8 +48,8 @@ describe('Page uses optimized responses', () => {
     const auditResult = ResponsesAreCompressedAudit.audit_({
       ResponseCompression: [
         generateResponse('index.js', 'text/javascript', 1000 * KB_BYTES, 910 * KB_BYTES),
-        generateResponse('index.css', 'text/css', 50 * KB_BYTES, 40 * KB_BYTES),
-        generateResponse('index.json', 'application/json', 10 * KB_BYTES, 5 * KB_BYTES),
+        generateResponse('index.css', 'text/css', 6 * KB_BYTES, 4.5 * KB_BYTES),
+        generateResponse('index.json', 'application/json', 10 * KB_BYTES, 10 * KB_BYTES),
       ],
     });
 
