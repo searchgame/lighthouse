@@ -31,6 +31,10 @@ const RATINGS = {
  * @return {string}
  */
 function calculateRating(value) {
+  if (typeof value === 'boolean') {
+    return value ? RATINGS.GOOD.label : RATINGS.POOR.label;
+  }
+
   let rating = RATINGS.POOR.label;
   if (value >= RATINGS.GOOD.minScore) {
     rating = RATINGS.GOOD.label;
@@ -98,19 +102,42 @@ window.ReportRenderer = class ReportRenderer {
    * @param {string} description
    * @return {!Element}
    */
-  _renderScore(score, title, description) {
-    const element = this._createElement('div', 'lighthouse-score');
+  _renderScore(score, title, description, auditOrCategory) {
+    const isAudit = 'result' in auditOrCategory;
+    const tagName = isAudit ? 'details' : 'div';
 
-    const value = element.appendChild(this._createElement('div', 'lighthouse-score__value'));
+    // Score template. Audits get a details dropdown. Categories don't.
+    const tmpContainer = this._createElement('div');
+    tmpContainer.innerHTML = `<div class="lighthouse-score">
+      <div class="lighthouse-score__value"><!-- filled --></div>
+      <${tagName} class="lighthouse-score__header">
+        <summary class="lighthouse-score__snippet">
+          <span class="lighthouse-score__title"><!-- filled --></span>
+          <div class="lighthouse-score__arrow" title="See audits"></div>
+        </summary>
+        <div class="lighthouse-score__description"><!-- filled --></div>
+      </${tagName}>
+    </div>`;
+
+    // Fill in the blanks.
+    const value = tmpContainer.querySelector('.lighthouse-score__value');
     value.textContent = formatNumber(score);
     value.classList.add(`lighthouse-score__value--${calculateRating(score)}`);
 
-    const column = element.appendChild(this._createElement('div', 'lighthouse-score__text'));
-    column.appendChild(this._createElement('div', 'lighthouse-score__title')).textContent = title;
-    column.appendChild(
-      this._createElement('div', 'lighthouse-score__description')).textContent = description;
+    if (typeof score === 'boolean') {
+      value.classList.add('lighthouse-score__value--boolean');
+    }
 
-    return element;
+    tmpContainer.querySelector('.lighthouse-score__title').textContent = title;
+    tmpContainer.querySelector('.lighthouse-score__description').textContent = description;
+
+    const header = tmpContainer.querySelector('.lighthouse-score__header');
+    header.open = score < 1;
+    if (isAudit && auditOrCategory.result.details) {
+      header.appendChild(this._renderDetails(auditOrCategory.result.details));
+    }
+
+    return tmpContainer.firstChild;
   }
 
   /**
@@ -200,7 +227,8 @@ window.ReportRenderer = class ReportRenderer {
    */
   _renderCategory(category) {
     const element = this._createElement('div', 'lighthouse-category');
-    element.appendChild(this._renderScore(category.score, category.name, category.description));
+    element.appendChild(
+        this._renderScore(category.score, category.name, category.description, category));
     for (const audit of category.audits) {
       element.appendChild(this._renderAudit(audit));
     }
@@ -215,12 +243,15 @@ window.ReportRenderer = class ReportRenderer {
     const element = this._createElement('div', 'lighthouse-audit');
     let title = audit.result.description;
     if (audit.result.displayValue) {
-      title += ': ' + audit.result.displayValue;
+      title += `:  ${audit.result.displayValue}`;
     }
-    element.appendChild(this._renderScore(audit.score, title, audit.result.helpText));
-    if (audit.result.details) {
-      element.appendChild(this._renderDetails(audit.result.details));
+    if (audit.result.optimalValue) {
+      title += ` (target: ${audit.result.optimalValue})`;
     }
+
+    element.appendChild(
+        this._renderScore(audit.result.score, title, audit.result.helpText, audit));
+
     return element;
   }
 };
