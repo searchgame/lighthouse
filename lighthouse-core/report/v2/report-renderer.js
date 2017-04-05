@@ -104,7 +104,7 @@ class DOM {
    * @param {!Object<string, string>=} attrs Attribute key/val pairs.
    * @return {!Element}
    */
-  createElement(name, className = null, attrs = {}) {
+  createElement(name, className, attrs = {}) {
     const element = this._document.createElement(name);
     if (className) {
       element.className = className;
