@@ -15,14 +15,21 @@
  */
 'use strict';
 
+/**
+ * @fileoverview The entry point for rendering the Lighthouse report based on the JSON output.
+ *    This file is injected into the report HTML along with the JSON report.
+ *
+ * Dummy text for ensuring report robustness: </script> pre$`post %%LIGHTHOUSE_JSON%%
+ */
+
 /* eslint-env browser */
 /* eslint indent: [2, 2, { "SwitchCase": 1, "outerIIFEBody": 0 }] */
 
 (function() {
 const RATINGS = {
-  GOOD: {label: 'good', minScore: 75},
+  PASS: {label: 'pass', minScore: 75},
   AVERAGE: {label: 'average', minScore: 45},
-  POOR: {label: 'poor'}
+  FAIL: {label: 'fail'}
 };
 
 /**
@@ -32,12 +39,12 @@ const RATINGS = {
  */
 function calculateRating(value) {
   if (typeof value === 'boolean') {
-    return value ? RATINGS.GOOD.label : RATINGS.POOR.label;
+    return value ? RATINGS.PASS.label : RATINGS.FAIL.label;
   }
 
-  let rating = RATINGS.POOR.label;
-  if (value >= RATINGS.GOOD.minScore) {
-    rating = RATINGS.GOOD.label;
+  let rating = RATINGS.FAIL.label;
+  if (value >= RATINGS.PASS.minScore) {
+    rating = RATINGS.PASS.label;
   } else if (value >= RATINGS.AVERAGE.minScore) {
     rating = RATINGS.AVERAGE.label;
   }
@@ -53,18 +60,77 @@ function formatNumber(number) {
   return number.toLocaleString(undefined, {maximumFractionDigits: 1});
 }
 
-/**
- * @fileoverview The entry point for rendering the Lighthouse report based on the JSON output.
- *    This file is injected into the report HTML along with the JSON report.
- *
- * Dummy text for ensuring report robustness: </script> pre$`post %%LIGHTHOUSE_JSON%%
- */
-window.ReportRenderer = class ReportRenderer {
+class DOM {
   /**
    * @param {!Document} document
    */
   constructor(document) {
     this._document = document;
+  }
+
+  /**
+   * Sets the text content of an element.
+   * @param {Element} element
+   * @param {!string} text
+   * @return {Element}
+   */
+  static setText(element, text) {
+    if (element) {
+      element.textContent = text;
+    }
+    return element;
+  }
+
+  /**
+   * Adds a class to an element.
+   * @param {Element} element
+   * @param {!string} className
+   * @return {Element}
+   */
+  static addClass(element, className) {
+    if (element) {
+      element.classList.add(className);
+    }
+    return element;
+  }
+
+  /**
+   * @param {string} name
+   * @param {string=} className
+   * @param {!Object<string, string>=} attrs Attribute key/val pairs.
+   * @return {!Element}
+   */
+  createElement(name, className = null, attrs = {}) {
+    const element = this._document.createElement(name);
+    if (className) {
+      element.className = className;
+    }
+    for (const [key, val] of Object.entries(attrs)) {
+      element.setAttribute(key, val);
+    }
+    return element;
+  }
+
+  /**
+   * @param {!string} selector
+   * @return {!DocumentFragment} A clone of the template content.
+   * @throws {Error}
+   */
+  cloneTemplate(selector) {
+    const template = this._document.querySelector(selector);
+    if (!template) {
+      throw new Error(`Template not found: template${selector}`);
+    }
+    return this._document.importNode(template.content, true);
+  }
+}
+
+class ReportRenderer {
+  /**
+   * @param {!Document} document
+   */
+  constructor(document) {
+    this._dom = new DOM(document);
   }
 
   /**
@@ -80,64 +146,40 @@ window.ReportRenderer = class ReportRenderer {
   }
 
   /**
-   * @param {string} name
-   * @param {string=} className
-   * @param {!Object<string, string>=} attrs Attribute key/val pairs.
-   * @return {!Element}
-   */
-  _createElement(name, className, attrs = {}) {
-    const element = this._document.createElement(name);
-    if (className) {
-      element.className = className;
-    }
-    for (const [key, val] of Object.entries(attrs)) {
-      element.setAttribute(key, val);
-    }
-    return element;
-  }
-
-  /**
-   * @param {number} score
-   * @param {string} title
-   * @param {string} description
+   * @param {!number} score
+   * @param {!string} title
+   * @param {!string} description
+   * @param {!(AuditJSON|CategoryJSON)} auditOrCategory
    * @return {!Element}
    */
   _renderScore(score, title, description, auditOrCategory) {
     const isAudit = 'result' in auditOrCategory;
-    const tagName = isAudit ? 'details' : 'div';
 
-    // Score template. Audits get a details dropdown. Categories don't.
-    const tmpContainer = this._createElement('div');
-    tmpContainer.innerHTML = `<div class="lighthouse-score">
-      <div class="lighthouse-score__value"><!-- filled --></div>
-      <${tagName} class="lighthouse-score__header">
-        <summary class="lighthouse-score__snippet">
-          <span class="lighthouse-score__title"><!-- filled --></span>
-          <div class="lighthouse-score__arrow" title="See audits"></div>
-        </summary>
-        <div class="lighthouse-score__description"><!-- filled --></div>
-      </${tagName}>
-    </div>`;
+    // Grab the correct html template.
+    const tmpl = isAudit ? this._dom.cloneTemplate('#tmpl-lighthouse-audit-score') :
+                           this._dom.cloneTemplate('#tmpl-lighthouse-category-score');
 
     // Fill in the blanks.
-    const value = tmpContainer.querySelector('.lighthouse-score__value');
-    value.textContent = formatNumber(score);
-    value.classList.add(`lighthouse-score__value--${calculateRating(score)}`);
+    const value = tmpl.querySelector('.lighthouse-score__value');
+    DOM.setText(value, formatNumber(score));
+    DOM.addClass(value, `lighthouse-score__value--${calculateRating(score)}`);
 
     if (typeof score === 'boolean') {
-      value.classList.add('lighthouse-score__value--boolean');
+      DOM.addClass(value, 'lighthouse-score__value--boolean');
     }
 
-    tmpContainer.querySelector('.lighthouse-score__title').textContent = title;
-    tmpContainer.querySelector('.lighthouse-score__description').textContent = description;
+    DOM.setText(tmpl.querySelector('.lighthouse-score__title'), title);
+    DOM.setText(tmpl.querySelector('.lighthouse-score__description'), description);
 
-    const header = tmpContainer.querySelector('.lighthouse-score__header');
-    header.open = score < 1;
-    if (isAudit && auditOrCategory.result.details) {
-      header.appendChild(this._renderDetails(auditOrCategory.result.details));
+    const header = tmpl.querySelector('.lighthouse-score__header');
+    if (isAudit && header) {
+      header.open = score < 1;
+      if (auditOrCategory.result.details) {
+        header.appendChild(this._renderDetails(auditOrCategory.result.details));
+      }
     }
 
-    return tmpContainer.firstChild;
+    return tmpl;
   }
 
   /**
@@ -162,7 +204,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderText(text) {
-    const element = this._createElement('div', 'lighthouse-text');
+    const element = this._dom.createElement('div', 'lighthouse-text');
     element.textContent = text.text;
     return element;
   }
@@ -172,7 +214,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderBlock(block) {
-    const element = this._createElement('div', 'lighthouse-block');
+    const element = this._dom.createElement('div', 'lighthouse-block');
     for (const item of block.items) {
       element.appendChild(this._renderDetails(item));
     }
@@ -184,14 +226,14 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderList(list) {
-    const element = this._createElement('details', 'lighthouse-list');
+    const element = this._dom.createElement('details', 'lighthouse-list');
     if (list.header) {
-      const summary = this._createElement('summary', 'lighthouse-list__header');
+      const summary = this._dom.createElement('summary', 'lighthouse-list__header');
       summary.textContent = list.header.text;
       element.appendChild(summary);
     }
 
-    const items = this._createElement('div', 'lighthouse-list__items');
+    const items = this._dom.createElement('div', 'lighthouse-list__items');
     for (const item of list.items) {
       items.appendChild(this._renderDetails(item));
     }
@@ -204,7 +246,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderException(e) {
-    const element = this._createElement('div', 'lighthouse-exception');
+    const element = this._dom.createElement('div', 'lighthouse-exception');
     element.textContent = String(e.stack);
     return element;
   }
@@ -214,7 +256,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderReport(report) {
-    const element = this._createElement('div', 'lighthouse-report');
+    const element = this._dom.createElement('div', 'lighthouse-report');
     for (const category of report.reportCategories) {
       element.appendChild(this._renderCategory(category));
     }
@@ -226,7 +268,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderCategory(category) {
-    const element = this._createElement('div', 'lighthouse-category');
+    const element = this._dom.createElement('div', 'lighthouse-category');
     element.appendChild(
         this._renderScore(category.score, category.name, category.description, category));
     for (const audit of category.audits) {
@@ -240,7 +282,7 @@ window.ReportRenderer = class ReportRenderer {
    * @return {!Element}
    */
   _renderAudit(audit) {
-    const element = this._createElement('div', 'lighthouse-audit');
+    const element = this._dom.createElement('div', 'lighthouse-audit');
     let title = audit.result.description;
     if (audit.result.displayValue) {
       title += `:  ${audit.result.displayValue}`;
@@ -254,8 +296,11 @@ window.ReportRenderer = class ReportRenderer {
 
     return element;
   }
-};
-})();
+}
+
+// Exports
+self.ReportRenderer = ReportRenderer;
+})(self);
 
 /** @typedef {{type: string, text: string|undefined, header: DetailsJSON|undefined, items: Array<DetailsJSON>|undefined}} */
 let DetailsJSON; // eslint-disable-line no-unused-vars
