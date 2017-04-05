@@ -204,11 +204,6 @@ body {
   font-size: 16px;
 }
 
-.lighthouse-audit > *:not(.lighthouse-score) {
-  margin-left: 80px;
-  margin-top: 10px;
-}
-
 /* Report */
 
 .lighthouse-exception {
