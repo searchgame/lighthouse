@@ -101,12 +101,12 @@ body {
   border-radius: inherit;
 }
 
-.lighthouse-score__value--boolean {
+.lighthouse-score__value--binary {
   text-indent: -500px;
 }
 
 /* No icon for audits with number scores. */
-.lighthouse-score__value:not(.lighthouse-score__value--boolean)::after {
+.lighthouse-score__value:not(.lighthouse-score__value--binary)::after {
   content: none;
 }
 

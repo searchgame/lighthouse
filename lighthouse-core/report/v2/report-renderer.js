@@ -34,27 +34,31 @@ const RATINGS = {
 
 /**
  * Convert a score to a rating label.
- * @param {number} value
- * @return {string}
+ * @param {!number} score
+ * @param {!string} precision One of 'binary', 'number', 'grade'.
+ * @return {!string}
  */
-function calculateRating(value) {
-  if (typeof value === 'boolean') {
-    return value ? RATINGS.PASS.label : RATINGS.FAIL.label;
+function calculateRating(score, precision) {
+  if (precision === 'numeric') {
+    let rating = RATINGS.FAIL.label;
+    if (score >= RATINGS.PASS.minScore) {
+      rating = RATINGS.PASS.label;
+    } else if (score >= RATINGS.AVERAGE.minScore) {
+      rating = RATINGS.AVERAGE.label;
+    }
+    return rating;
+  } else if (precision === 'grade') {
+    // Not implemented yet.
   }
 
-  let rating = RATINGS.FAIL.label;
-  if (value >= RATINGS.PASS.minScore) {
-    rating = RATINGS.PASS.label;
-  } else if (value >= RATINGS.AVERAGE.minScore) {
-    rating = RATINGS.AVERAGE.label;
-  }
-  return rating;
+  // Treat as binary by default.
+  return score === 100 ? RATINGS.PASS.label : RATINGS.FAIL.label;
 }
 
 /**
  * Format number.
- * @param {number} number
- * @return {string}
+ * @param {!number} number
+ * @return {!string}
  */
 function formatNumber(number) {
   return number.toLocaleString(undefined, {maximumFractionDigits: 1});
@@ -84,12 +88,12 @@ class DOM {
   /**
    * Adds a class to an element.
    * @param {Element} element
-   * @param {!string} className
+   * @param {...!string} classes
    * @return {Element}
    */
-  static addClass(element, className) {
+  static addClass(element, ...classes) {
     if (element) {
-      element.classList.add(className);
+      element.classList.add(...classes);
     }
     return element;
   }
@@ -154,6 +158,8 @@ class ReportRenderer {
    */
   _renderScore(score, title, description, auditOrCategory) {
     const isAudit = 'result' in auditOrCategory;
+    const precision = isAudit ? 'binary' : 'category'; // TODO(ericbidelman): placeholder
+    const rating = calculateRating(score, precision);
 
     // Grab the correct html template.
     const tmpl = isAudit ? this._dom.cloneTemplate('#tmpl-lighthouse-audit-score') :
@@ -162,18 +168,15 @@ class ReportRenderer {
     // Fill in the blanks.
     const value = tmpl.querySelector('.lighthouse-score__value');
     DOM.setText(value, formatNumber(score));
-    DOM.addClass(value, `lighthouse-score__value--${calculateRating(score)}`);
-
-    if (typeof score === 'boolean') {
-      DOM.addClass(value, 'lighthouse-score__value--boolean');
-    }
+    DOM.addClass(value, `lighthouse-score__value--${rating}`,
+                        `lighthouse-score__value--${precision}`);
 
     DOM.setText(tmpl.querySelector('.lighthouse-score__title'), title);
     DOM.setText(tmpl.querySelector('.lighthouse-score__description'), description);
 
     const header = tmpl.querySelector('.lighthouse-score__header');
     if (isAudit && header) {
-      header.open = score < 1;
+      header.open = score < 100; // expand failed audits
       if (auditOrCategory.result.details) {
         header.appendChild(this._renderDetails(auditOrCategory.result.details));
       }
@@ -292,7 +295,7 @@ class ReportRenderer {
     }
 
     element.appendChild(
-        this._renderScore(audit.result.score, title, audit.result.helpText, audit));
+        this._renderScore(audit.score, title, audit.result.helpText, audit));
 
     return element;
   }
